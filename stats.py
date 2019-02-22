@@ -2,7 +2,6 @@
 
 import datetime
 import argparse
-import sys
 from github import Github
 
 def print_referrers(repo, f):
@@ -49,7 +48,7 @@ def print_clones(repo, f):
 def main():
     parser = argparse.ArgumentParser(description='Retrieve traffice data from iocage plugin repos on Github')
     parser.add_argument('-i', default=False, action='store_true', help='Create individual files')
-    parser.add_argument('-s', default=False, action='store_true', help='Create a single file')
+    parser.add_argument('-s', default=True, action='store_true', help='Create a single file (default)')
     parser.add_argument('-r', default=True, action='store_true', help='Only get referrers')
     parser.add_argument('-v', default=True, action='store_true', help='Only get views')
     parser.add_argument('-p', default=True, action='store_true', help='Only get paths')
@@ -61,8 +60,6 @@ def main():
     only_views = args.v
     only_paths = args.p
     only_clones = args.c
-    if not individual and not single:
-        sys.exit('Specifiy individual (-i) or single (-s) for file output')
     #Put access token in here
     g = Github("")
     org = g.get_organization("freenas")
