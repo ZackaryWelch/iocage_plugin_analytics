@@ -15,23 +15,32 @@ Short Python script to retrieve traffic data from Github's API with regards to i
 
 # Setup
 First edit stats.py and put the Github access token in:
+
 `g = Github("")`
+
 Must have push access to the repositories. Only repo access needed.
 
 If using Google Sheets:
+
 Authorize the Google account from which the sheet will be created by going to:
+
 https://developers.google.com/sheets/api/quickstart/python
+
 and enabling the API. Then save the created credentials.json file in the directory of the script.
+
 Then edit
+
 `sheet_id = ''`
+
 and put the ID of the spreadsheet to be written. A future update will automatically create the spreadsheet.
 
 # Requirements
 py-github
 
 If using Google Sheets:
-google-api-python-client
-google-auth-httplib2
-google-auth-oauthlib
 
-See https://developers.google.com/sheets/api/quickstart/python for more information on setting up the Sheets API
+google-api-python-client
+
+google-auth-httplib2
+
+google-auth-oauthlib
