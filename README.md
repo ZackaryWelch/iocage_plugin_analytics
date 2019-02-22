@@ -20,7 +20,7 @@ First edit stats.py and put the Github access token in:
 
 Must have push access to the repositories. Only repo access needed.
 
-If using Google Sheets:
+## If using Google Sheets:
 
 Authorize the Google account from which the sheet will be created by going to:
 
@@ -28,19 +28,17 @@ https://developers.google.com/sheets/api/quickstart/python
 
 and enabling the API. Then save the created credentials.json file in the directory of the script.
 
-Then edit
+Then edit:
 
 `sheet_id = ''`
 
 and put the ID of the spreadsheet to be written. A future update will automatically create the spreadsheet.
 
 # Requirements
-py-github
+* py-github
 
-If using Google Sheets:
+## If using Google Sheets:
 
-google-api-python-client
-
-google-auth-httplib2
-
-google-auth-oauthlib
+* google-api-python-client
+* google-auth-httplib2
+* google-auth-oauthlib
