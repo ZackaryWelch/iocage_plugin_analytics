@@ -50,9 +50,17 @@ def main():
     parser = argparse.ArgumentParser(description='Retrieve traffice data from iocage plugin repos on Github')
     parser.add_argument('-i', default=False, action='store_true', help='Create individual files')
     parser.add_argument('-s', default=False, action='store_true', help='Create a single file')
+    parser.add_argument('-r', default=True, action='store_true', help='Only get referrers')
+    parser.add_argument('-v', default=True, action='store_true', help='Only get views')
+    parser.add_argument('-p', default=True, action='store_true', help='Only get paths')
+    parser.add_argument('-c', default=True, action='store_true', help='Only get clones')
     args = parser.parse_args()
     individual = args.i
     single = args.s
+    only_referrers = args.r
+    only_views = args.v
+    only_paths = args.p
+    only_clones = args.c
     if not individual and not single:
         sys.exit('Specifiy individual (-i) or single (-s) for file output')
     #Put access token in here
@@ -68,10 +76,14 @@ def main():
         elif single:
             f.write(repo.name+'\n\n')
         print("Traffic data for", repo.name, end=' ')
-        print_referrers(repo, f)
-        print_paths(repo, f)
-        print_views(repo, f)
-        print_clones(repo, f)
+        if only_referrers:
+            print_referrers(repo, f)
+        if only_paths:
+            print_paths(repo, f)
+        if only_views:
+            print_views(repo, f)
+        if only_clones:
+            print_clones(repo, f)
         print(' ')
         if individual:
             f.close()
