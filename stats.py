@@ -98,6 +98,17 @@ def print_clones(repo, f):
         f.write(f'Total clones: {clone.count}, Unique clones: {clone.uniques}, on {formatted_time}\n')
     f.write('\n')
 
+def get_simple_clones(repo):
+    clones = repo.get_clones_traffic()
+    total_count = clones['count']
+    return [repo.name[14:], total_count]
+
+def print_simple_clones(repo, f):
+    clones = repo.get_clones_traffic()
+    total_count = clones['count']
+    short_name = repo.name[14:]
+    f.write(f'{short_name}: {total_count}\n')
+
 def main():
     print_dict = {'referrers': print_referrers,
                   'paths': print_paths,
@@ -115,6 +126,7 @@ def main():
     parser.add_argument('-grabs', nargs="+", default=list(print_dict), help=f'Choose which data points to retrieve, default all: {" ".join(list(print_dict))}')
     parser.add_argument('-v', default=False, action='store_true', help='Verbose mode')
     parser.add_argument('-token', default='', help='Access token for GitHub. Must have push access to repo')
+    parser.add_argument('-simplified', default=True, action='store_true', help='Only show total clone count for repos')
     args = parser.parse_args()
     format_type = args.format
     file_type = args.file_type
@@ -122,6 +134,7 @@ def main():
     verbose = args.v
     inputted_id = args.sheet_id
     access_token = args.token
+    simplified = args.simplified
 
     if access_token == '':
         sys.exit("No token inputted. Cannot connect to GitHub.")
@@ -138,17 +151,19 @@ def main():
     #Accept shorter arguments and check for invalid input
     grab_names = [name for name in grabs]
     total_grabs = []
-    for grab in grab_names:
-        if grab == 'r' or grab == 'referrers':
-            total_grabs.append('referrers')
-        elif grab == 'v' or grab == 'views':
-            total_grabs.append('views')
-        elif grab == 'p' or grab == 'paths':
-            total_grabs.append('paths')
-        elif grab == 'c' or grab == 'clones':
-            total_grabs.append('clones')
-        else:
-            print(f'Unknown grab function {grab}, skipping')
+    #Grab options not available in simplified mode
+    if not simplified:
+        for grab in grab_names:
+            if grab == 'r' or grab == 'referrers':
+                total_grabs.append('referrers')
+            elif grab == 'v' or grab == 'views':
+                total_grabs.append('views')
+            elif grab == 'p' or grab == 'paths':
+                total_grabs.append('paths')
+            elif grab == 'c' or grab == 'clones':
+                total_grabs.append('clones')
+            else:
+                print(f'Unknown grab function {grab}, skipping')
     if file_type == 'i':
         file_type = 'individual'
     if file_type == 's':
@@ -188,23 +203,35 @@ def main():
         service = build('sheets', 'v4', credentials=creds)
         if inputted_id == '':
             #Creates a spreadsheet with the title GitHub Data if no id is given
-            body = {'properties': { 'title': 'GitHub Data' } }
+            title = ''
+            if simplified:
+                title = 'GitHub Total Clones'
+            else:
+                title = 'GitHub Total Clones'
+            body = {'properties': { 'title': title } }
             sheet = service.spreadsheets().create(body=body, fields='spreadsheetId').execute()
             sheet_id = sheet.get('spreadsheetId')
         else:
             sheet_id = inputted_id
         #Create a header row on the spreadsheet
-        values = [['repo', 'count', 'uniques', 'date', 'name']]
+        if simplified:
+            values = [['repo', 'count']]
+        else:
+            values = [['repo', 'count', 'uniques', 'date', 'name']]
         for repo in plugin_repos:
             #Add the name as a row for each plugin repo
-            values.append([repo.name])
+            if not simplified:
+                values.append([repo.name])
             if verbose:
-                print("Traffic data for", repo.name, end=' ')
-            for name in total_grabs:
-                #Generate rows of data from api calls in the get functions
-                value_list = get_dict[name](repo)
-                for value in value_list:
-                    values.append(value)
+                print("Traffic data for", repo.name[14:], end=' ')
+            if simplified:
+                values.append(get_simple_clones(repo))
+            else:
+                for name in total_grabs:
+                    #Generate rows of data from api calls in the get functions
+                    value_list = get_dict[name](repo)
+                    for value in value_list:
+                        values.append(value)
             if verbose:
                 print(' ')
                 sys.stdout.flush()
@@ -220,13 +247,16 @@ def main():
             f = open('data_plugins', 'w')
         for repo in plugin_repos:
             if file_type == 'individual':
-                f = open('data_'+repo.name, 'w')
-            elif file_type == 'single':
+                f = open('data_'+repo.name[14:], 'w')
+            elif file_type == 'single' and not simplified:
                 f.write(repo.name+'\n\n')
             if verbose:
-                print("Traffic data for", repo.name, end=' ')
-            for name in total_grabs:
-                print_dict[name](repo, f)
+                print("Traffic data for", repo.name[14:], end=' ')
+            if simplified:
+                print_simple_clones(repo, f)
+            else:
+                for name in total_grabs:
+                    print_dict[name](repo, f)
             if verbose:
                 print(' ')
                 sys.stdout.flush()
