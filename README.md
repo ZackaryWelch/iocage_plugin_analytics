@@ -13,6 +13,7 @@ Short Python script to retrieve traffic data from Github's API with regards to i
 
 # Data
 See https://developer.github.com/v3/repos/traffic/
+
 The script grabs four different types of traffic data. All data is over the last 14 days.
 * Referrers. Shows where traffic is coming from to the repo. The name of the referrer, total referals, and unique referrals. Top 10
 * Paths: Shows which files are most often viewed in the repo. The name of the path, total views, and unique views. Top 10
