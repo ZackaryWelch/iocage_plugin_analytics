@@ -120,7 +120,7 @@ def main():
                 'clones': get_clones}
 
     parser = argparse.ArgumentParser(description='Retrieve traffic data from iocage plugin repos on Github')
-    parser.add_argument('-format', default='file', help='Output format (file or sheets)')
+    parser.add_argument('-format', default='sheets', help='Output format (file or sheets)')
     parser.add_argument('-file_type', default='single', help='Choose type of file output (single or individual)')
     parser.add_argument('-sheet_id', default='', help='The ID of the spreadsheet to be written to. By default a new spreadsheet is created. Must have write access to the sheet.')
     parser.add_argument('-grabs', nargs="+", default=list(print_dict), help=f'Choose which data points to retrieve, default all: {" ".join(list(print_dict))}')
@@ -239,6 +239,9 @@ def main():
         body = { 'values' : values }
         #Send the cell values to the sheet
         result = sheet.values().update(spreadsheetId=sheet_id, range=sheet_range, valueInputOption='USER_ENTERED', body=body).execute()
+        if verbose:
+            print(result)
+        
     else:
         #Writes files with the name data_REPO if individual format
         #Otherwise data_plugins for a single file
