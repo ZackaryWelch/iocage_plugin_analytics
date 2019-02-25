@@ -17,7 +17,7 @@ def get_referrers(repo):
     values.append(['referrers'])
     for referrer in referrers:
         values.append(['', referrer.count, referrer.uniques, '', referrer.referrer])
-        return values
+    return values
 
 def print_referrers(repo, f):
     referrers = repo.get_top_referrers()
@@ -93,6 +93,7 @@ def get_simple_clones(repo):
 def print_simple_clones(repo, f):
     clones = repo.get_clones_traffic()
     total_count = clones['count']
+    total_uniques = clones['uniques']
     short_name = repo.name[14:]
     f.write(f'{short_name}: {total_count}, {total_uniques}\n')
 
