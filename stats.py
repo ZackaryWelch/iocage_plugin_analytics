@@ -17,7 +17,7 @@ def get_referrers(repo):
     values.append(['referrers'])
     for referrer in referrers:
         values.append(['', referrer.count, referrer.uniques, '', referrer.referrer])
-    return values
+        return values
 
 def print_referrers(repo, f):
     referrers = repo.get_top_referrers()
@@ -43,7 +43,6 @@ def print_paths(repo, f):
 
 def get_views(repo):
     daily_views = repo.get_views_traffic()
-    weekly_views = repo.get_views_traffic(per="week")
     total_views = daily_views['count']
     total_unique_views = daily_views['uniques']
     values = []
@@ -51,17 +50,10 @@ def get_views(repo):
     for view in daily_views['views']:
         formatted_time = view.timestamp.strftime("%m/%d/%y")
         values.append(['', view.count, '', formatted_time])
-    for view in weekly_views['views']:
-        week_start = view.timestamp
-        week_end = week_start + datetime.timedelta(days=7)
-        formatted_start = week_start.strftime("%m/%d/%y")
-        formatted_end = week_end.strftime("%m/%d/%y")
-        values.append(['', view.count, '', formatted_start + '-' + formatted_end])
     return values
 
 def print_views(repo, f):
     daily_views = repo.get_views_traffic()
-    weekly_views = repo.get_views_traffic(per="week")
     total_views = daily_views['count']
     total_unique_views = daily_views['uniques']
     f.write(f'Total Views: {total_views}\n')
@@ -69,12 +61,6 @@ def print_views(repo, f):
     for view in daily_views['views']:
         formatted_time = view.timestamp.strftime("%m/%d/%y")
         f.write(f'{view.count} views on {formatted_time}\n')
-    for view in weekly_views['views']:
-        week_start = view.timestamp
-        week_end = week_start + datetime.timedelta(days=7)
-        formatted_start = week_start.strftime("%m/%d/%y")
-        formatted_end = week_end.strftime("%m/%d/%y")
-        f.write(f'{view.count} views on {formatted_start} to {formatted_end}\n')
     f.write('\n')
 
 def get_clones(repo):
@@ -101,13 +87,14 @@ def print_clones(repo, f):
 def get_simple_clones(repo):
     clones = repo.get_clones_traffic()
     total_count = clones['count']
-    return [repo.name[14:], total_count]
+    total_uniques = clones['uniques']
+    return [repo.name[14:], total_count, total_uniques]
 
 def print_simple_clones(repo, f):
     clones = repo.get_clones_traffic()
     total_count = clones['count']
     short_name = repo.name[14:]
-    f.write(f'{short_name}: {total_count}\n')
+    f.write(f'{short_name}: {total_count}, {total_uniques}\n')
 
 def main():
     print_dict = {'referrers': print_referrers,
@@ -135,6 +122,9 @@ def main():
     inputted_id = args.sheet_id
     access_token = args.token
     simplified = args.simplified
+
+    if verbose:
+        simplified = False
 
     if access_token == '':
         sys.exit("No token inputted. Cannot connect to GitHub.")
@@ -215,7 +205,7 @@ def main():
             sheet_id = inputted_id
         #Create a header row on the spreadsheet
         if simplified:
-            values = [['repo', 'count']]
+            values = [['repo', 'count', 'uniques']]
         else:
             values = [['repo', 'count', 'uniques', 'date', 'name']]
         for repo in plugin_repos:
