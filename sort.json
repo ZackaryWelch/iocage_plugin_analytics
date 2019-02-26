@@ -1,0 +1,21 @@
+{
+  "requests": [
+    {
+      "sortRange": {
+        "range": {
+          "sheetId": 0,
+          "startRowIndex": 1,
+          "endRowIndex": 35,
+          "startColumnIndex": 0,
+          "endColumnIndex": 3
+        },
+        "sortSpecs": [
+          {
+            "dimensionIndex": 1,
+            "sortOrder": "DESCENDING"
+          }
+        ]
+      }
+    }
+  ]
+}

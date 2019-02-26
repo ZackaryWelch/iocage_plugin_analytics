@@ -1,0 +1,54 @@
+{
+  "requests": [
+    {
+      "addChart": {
+        "chart": {
+          "spec": {
+            "title": "GitHub Traffic Data",
+            "pieChart": {
+              "legendPosition": "LABELED_LEGEND",
+              "threeDimensional": false,
+              "domain": {
+                "sourceRange": {
+                  "sources": [
+                    {
+                      "sheetId": 0,
+                      "startRowIndex": 1,
+                      "endRowIndex": 35,
+                      "startColumnIndex": 0,
+                      "endColumnIndex": 1
+                    }
+                  ]
+                }
+              },
+              "series": {
+                "sourceRange": {
+                  "sources": [
+                    {
+                      "sheetId": 0,
+                      "startRowIndex": 1,
+                      "endRowIndex": 35,
+                      "startColumnIndex": 1,
+                      "endColumnIndex": 2
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "position": {
+            "overlayPosition": {
+              "anchorCell": {
+                "sheetId": 0,
+                "rowIndex": 2,
+                "columnIndex": 4
+              },
+              "offsetXPixels": 50,
+              "offsetYPixels": 50
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -5,11 +5,27 @@ import argparse
 import sys
 import pickle
 import os.path
+import json
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
 from github import Github
+
+#def replace_id(body, sheet_id):
+#    for k in body.keys():
+#        if k == "sheetId" and body[k] == "":
+#            body[k] = sheet_id
+#        if isinstance(body, dict) and isinstance(body[k], dict):
+#            replace_id(body[k], sheet_id)
+#        elif isinstance(body, dict) and isinstance(body[k], list):
+#            replace_id(body[k][0], sheet_id)
+
+def send_request(file_name, sheet, sheet_id):
+    with open(file_name, 'r') as f:
+        body = json.load(f)
+        #replace_id(body['requests'][0], sheet_id)
+        sheet.batchUpdate(spreadsheetId=sheet_id,body=body).execute()
 
 def get_referrers(repo):
     referrers = repo.get_top_referrers()
@@ -229,10 +245,9 @@ def main():
         sheet = service.spreadsheets()
         body = { 'values' : values }
         #Send the cell values to the sheet
-        result = sheet.values().update(spreadsheetId=sheet_id, range=sheet_range, valueInputOption='USER_ENTERED', body=body).execute()
-        if verbose:
-            print(result)
-        
+        sheet.values().update(spreadsheetId=sheet_id, range=sheet_range, valueInputOption='USER_ENTERED', body=body).execute()
+        send_request('sort.json', sheet, sheet_id)
+        send_request('chart.json', sheet, sheet_id)
     else:
         #Writes files with the name data_REPO if individual format
         #Otherwise data_plugins for a single file
