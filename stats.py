@@ -1,14 +1,16 @@
 #!/bin/python
 
-import datetime
+import fileinput
 import argparse
 import sys
 import pickle
 import os.path
 import json
+import time
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+from os import listdir
 
 from github import Github
 
@@ -39,7 +41,7 @@ def print_referrers(repo, f):
     referrers = repo.get_top_referrers()
     f.write(f'Number of top referrers: {len(referrers)}\n')
     for referrer in referrers:
-        f.write(f'{referrer.count} views, {referrer.uniques}, unique views from {referrer.referrer}\n')
+        f.write(f'    \"count\" : {referrer.count},\n    \"uniques\" : {referrer.uniques},\n    \"referrer\" : {referrer.referrer}\n')
     f.write('\n')
 
 def get_paths(repo):
@@ -54,7 +56,7 @@ def print_paths(repo, f):
     paths = repo.get_top_paths()
     f.write(f'Number of top paths: {len(paths)}\n')
     for path in paths:
-        f.write(f'{path.count} views, {path.uniques}, unique views in {path.path}\n')
+        f.write(f'    \"count\" : {path.count},\n    \"uniques\" : {path.uniques},\n    \"path\" : {path.path}\n')
     f.write('\n')
 
 def get_views(repo):
@@ -72,11 +74,10 @@ def print_views(repo, f):
     daily_views = repo.get_views_traffic()
     total_views = daily_views['count']
     total_unique_views = daily_views['uniques']
-    f.write(f'Total Views: {total_views}\n')
-    f.write(f'Total Unique Views: {total_unique_views}\n')
+    f.write(f'    \"total_views\" : {total_views},\n')
+    f.write(f'    \"total_uniques\" : {total_unique_views},\n')
     for view in daily_views['views']:
-        formatted_time = view.timestamp.strftime("%m/%d/%y")
-        f.write(f'{view.count} views on {formatted_time}\n')
+        f.write(f'    \"count\" : {view.count},\n    \"time_t\" : {view.timestamp}\n')
     f.write('\n')
 
 def get_clones(repo):
@@ -93,11 +94,9 @@ def get_clones(repo):
 def print_clones(repo, f):
     clones = repo.get_clones_traffic()
     total_count = clones['count']
-    f.write(f'Total clones: {total_count}\n')
+    f.write(f'    \"total_count\" : {total_count},\n')
     for clone in clones['clones']:
-        #Converts the datetime format to m/d/y to remove pointless h/m/s value
-        formatted_time = clone.timestamp.strftime("%m/%d/%y")
-        f.write(f'Total clones: {clone.count}, Unique clones: {clone.uniques}, on {formatted_time}\n')
+        f.write(f'    \"count\" : {clone.count},\n    \"uniques\" : {clone.uniques},\n    \"time_t\" : {clone.timestamp}\n')
     f.write('\n')
 
 def get_simple_clones(repo):
@@ -110,8 +109,7 @@ def print_simple_clones(repo, f):
     clones = repo.get_clones_traffic()
     total_count = clones['count']
     total_uniques = clones['uniques']
-    short_name = repo.name[14:]
-    f.write(f'{short_name}: {total_count}, {total_uniques}\n')
+    f.write(f'    \"count\" : {total_count},\n    \"uniques\" : {total_uniques}\n')
 
 def main():
     print_dict = {'referrers': print_referrers,
@@ -125,23 +123,31 @@ def main():
 
     parser = argparse.ArgumentParser(description='Retrieve traffic data from iocage plugin repos on Github')
     parser.add_argument('-format', default='sheets', help='Output format (file or sheets)')
-    parser.add_argument('-file_type', default='single', help='Choose type of file output (single or individual)')
+    parser.add_argument('-collect_json', default=False, action='store_true', help='Bring all data_plugin files together into one file with objects of arrays')
     parser.add_argument('-sheet_id', default='', help='The ID of the spreadsheet to be written to. By default a new spreadsheet is created. Must have write access to the sheet.')
     parser.add_argument('-grabs', nargs="+", default=list(print_dict), help=f'Choose which data points to retrieve, default all: {" ".join(list(print_dict))}')
     parser.add_argument('-v', default=False, action='store_true', help='Verbose mode')
     parser.add_argument('-token', default='', help='Access token for GitHub. Must have push access to repo')
-    parser.add_argument('-simplified', default=True, action='store_true', help='Only show total clone count for repos')
+    parser.add_argument('-all', default=False, action='store_true', help='Only show total clone count for repos')
     args = parser.parse_args()
     format_type = args.format
-    file_type = args.file_type
+    collect_json = args.collect_json
     grabs = args.grabs
     verbose = args.v
     inputted_id = args.sheet_id
     access_token = args.token
-    simplified = args.simplified
+    all_data = args.all
 
-    if verbose:
-        simplified = False
+    if collect_json:
+        jsonfiles = [f for f in listdir('.') if 'data_plugin' in f and f != 'data_plugins_all.json']
+        if len(jsonfiles) > 0:
+            open('data_plugins_all.json', 'w')
+            for json in jsonfiles:
+                with open(json, 'r') as f:
+                    pass
+            sys.exit('Finished combining json files')
+        else:
+            sys.exit('No data files present')
 
     if access_token == '':
         sys.exit("No token inputted. Cannot connect to GitHub.")
@@ -159,7 +165,7 @@ def main():
     grab_names = [name for name in grabs]
     total_grabs = []
     #Grab options not available in simplified mode
-    if not simplified:
+    if all_data:
         for grab in grab_names:
             if grab == 'r' or grab == 'referrers':
                 total_grabs.append('referrers')
@@ -171,12 +177,6 @@ def main():
                 total_grabs.append('clones')
             else:
                 print(f'Unknown grab function {grab}, skipping')
-    if file_type == 'i':
-        file_type = 'individual'
-    if file_type == 's':
-        file_type = 'single'
-    if file_type != 'single' and file_type != 'individual':
-        print(f'Invalid file type {file_type}')
     if format_type == 's':
         format_type = 'sheets'
     if format_type == 'f':
@@ -211,8 +211,8 @@ def main():
         if inputted_id == '':
             #Creates a spreadsheet with the title GitHub Data if no id is given
             title = ''
-            if simplified:
-                title = 'GitHub Total Clones'
+            if all_data:
+                title = 'GitHub Data'
             else:
                 title = 'GitHub Total Clones'
             body = {'properties': { 'title': title } }
@@ -221,24 +221,24 @@ def main():
         else:
             sheet_id = inputted_id
         #Create a header row on the spreadsheet
-        if simplified:
-            values = [['repo', 'count', 'uniques']]
-        else:
+        if all_data:
             values = [['repo', 'count', 'uniques', 'date', 'name']]
+        else:
+            values = [['repo', 'count', 'uniques']]
         for repo in plugin_repos:
             #Add the name as a row for each plugin repo
-            if not simplified:
+            if all_data:
                 values.append([repo.name])
             if verbose:
                 print("Traffic data for", repo.name[14:], end=' ')
-            if simplified:
-                values.append(get_simple_clones(repo))
-            else:
+            if all_data:
                 for name in total_grabs:
                     #Generate rows of data from api calls in the get functions
                     value_list = get_dict[name](repo)
                     for value in value_list:
                         values.append(value)
+            else:
+                values.append(get_simple_clones(repo))
             if verbose:
                 print(' ')
                 sys.stdout.flush()
@@ -249,29 +249,27 @@ def main():
         send_request('sort.json', sheet, sheet_id)
         send_request('chart.json', sheet, sheet_id)
     else:
-        #Writes files with the name data_REPO if individual format
+        #Writes json files with the name data_REPO if individual format
         #Otherwise data_plugins for a single file
         f = None
-        if file_type == 'single':
-            f = open('data_plugins', 'w')
+        ts = int(time.time())
+        f = open('data_plugins_'+str(ts)+'.json', 'w')
+        f.write('{\n')
         for repo in plugin_repos:
-            if file_type == 'individual':
-                f = open('data_'+repo.name[14:], 'w')
-            elif file_type == 'single' and not simplified:
-                f.write(repo.name+'\n\n')
+            f.write('  \"'+repo.name[14:]+'\" : {\n')
             if verbose:
                 print("Traffic data for", repo.name[14:], end=' ')
-            if simplified:
-                print_simple_clones(repo, f)
-            else:
+            if all_data:
                 for name in total_grabs:
                     print_dict[name](repo, f)
+            else:
+                print_simple_clones(repo, f)
             if verbose:
                 print(' ')
                 sys.stdout.flush()
-            if file_type == 'individual':
-                f.close()
-        if file_type == 'single':
-            f.close()
+            f.write('  },\n')
+        f.write('  \"time_t\" : '+str(ts)+'\n')
+        f.write('}')
+        f.close()
 
 if __name__ == "__main__": main()
