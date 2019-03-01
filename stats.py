@@ -122,7 +122,7 @@ def main():
                 'clones': get_clones}
 
     parser = argparse.ArgumentParser(description='Retrieve traffic data from iocage plugin repos on Github')
-    parser.add_argument('-format', default='sheets', help='Output format (file or sheets)')
+    parser.add_argument('-format', default='file', help='Output format (file or sheets)')
     parser.add_argument('-collect_json', default=False, action='store_true', help='Bring all data_plugin files together into one file with objects of arrays')
     parser.add_argument('-sheet_id', default='', help='The ID of the spreadsheet to be written to. By default a new spreadsheet is created. Must have write access to the sheet.')
     parser.add_argument('-grabs', nargs="+", default=list(print_dict), help=f'Choose which data points to retrieve, default all: {" ".join(list(print_dict))}')
@@ -139,12 +139,57 @@ def main():
     all_data = args.all
 
     if collect_json:
+        #Find all data_plugin files, then reverse the list to get the right time order
         jsonfiles = [f for f in listdir('.') if 'data_plugin' in f and f != 'data_plugins_all.json']
+        jsonfiles = jsonfiles[::-1]
         if len(jsonfiles) > 0:
-            open('data_plugins_all.json', 'w')
-            for json in jsonfiles:
-                with open(json, 'r') as f:
-                    pass
+            names = []
+            counts = []
+            uniques = []
+            stamps = []
+            for file_name in jsonfiles:
+                with open(file_name, 'r') as f:
+                    #Loads each of the json files and stores the data
+                    body = json.load(f)
+                    for repo in body.keys():
+                        if repo == 'time_t':
+                            stamps.append(body[repo])
+                        else:
+                            names.append(repo)
+                            counts.append((repo, body[repo]['count']))
+                            uniques.append((repo, body[repo]['uniques']))
+            with open('data_plugins_all.json', 'w') as f:
+                f.write('{\n')
+                #Writes a single json file with arrays in each object
+                for name in names:
+                    f.write('  \"'+name+'\" : {\n')
+                    f.write('    \"count\" : [')
+                    counter = 1
+                    for count in counts:
+                        if count[0] == name:
+                            f.write(str(count[1]))
+                            if counter < len(stamps):
+                                f.write(',')
+                                counter += 1
+                    f.write('],\n')
+                    f.write('    \"uniques\" : [')
+                    counter = 1
+                    for unique in uniques:
+                        if unique[0] == name:
+                            f.write(str(unique[1]))
+                            if counter < len(stamps):
+                                f.write(',')
+                                counter += 1
+                    f.write(']\n')
+                    f.write('  },\n')
+                f.write('  \"time_t\" : [')
+                counter = 1
+                for stamp in stamps:
+                    f.write(str(stamp))
+                    if counter < len(stamps):
+                        f.write(',')
+                        counter += 1
+                f.write(']\n}')
             sys.exit('Finished combining json files')
         else:
             sys.exit('No data files present')
